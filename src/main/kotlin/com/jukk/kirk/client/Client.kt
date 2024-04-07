@@ -5,23 +5,28 @@ import io.ktor.utils.io.*
 import com.jukk.kirk.protocol.ClientParser
 import com.jukk.kirk.protocol.Message
 import com.jukk.kirk.server.Command
+import io.ktor.util.network.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 
 class Client(
     private val socket: Socket,
     private val commandChannel: Channel<Command>,
+    outBufferLen: Int = 400
 ) {
     private val readChannel: ByteReadChannel = socket.openReadChannel()
     private val writeChannel: ByteWriteChannel = socket.openWriteChannel()
 
-    private val outQueue = Channel<String>(400)
+    private val outQueue = Channel<String>(outBufferLen)
 
     private var nick: String = ""
     private var user: String = ""
     private var realName: String = ""
+    private val hostname: String = socket.remoteAddress.toJavaAddress().hostname
 
     fun getFullmask(): String {
-        return "$nick!$user@$realName"
+        return "$nick!$user@$hostname"
     }
 
     fun setNick(nick: String) {
@@ -58,10 +63,10 @@ class Client(
     }
 
     suspend fun sendMessage(message: String) {
-        send(message)
+        outQueue.send(message)
     }
 
-    suspend fun receiveMessage(): Message? {
+    private suspend fun receiveMessage(): Message? {
         val line = receive()
         return line?.let {
             println("Received: $it")
@@ -71,15 +76,39 @@ class Client(
     }
 
     suspend fun close() {
+        outQueue.close()
         socket.awaitClosed()
     }
 
-    suspend fun handle() {
+    private suspend fun processOutQueue() {
+        for (message in outQueue) {
+            send(message)
+        }
+    }
+
+    suspend fun healthcheckTicker() {
         while (true) {
-            val message = receiveMessage() ?: break
-            commandChannel.send(Command(this, message))
+            commandChannel.send(Command.Healthcheck(this))
+            kotlinx.coroutines.delay(30000)
+        }
+    }
+
+    suspend fun handle(scope: CoroutineScope) {
+        val writerJob = scope.launch {
+            processOutQueue()
         }
 
+        val healthcheckJob = scope.launch { healthcheckTicker() }
+
+        while (true) {
+            val message = receiveMessage() ?: break
+            commandChannel.send(Command.Message(this, message))
+        }
+
+        writerJob.cancel()
+        healthcheckJob.cancel()
         close()
+
+        println("Client disconnected")
     }
 }

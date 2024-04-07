@@ -26,6 +26,7 @@ class State {
 
     fun removeClient(client: Client) {
         clients.remove(client)
+        // todo remove from all channels
     }
 
     fun getClient(target: String): Client? {

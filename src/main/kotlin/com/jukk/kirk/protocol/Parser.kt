@@ -27,6 +27,9 @@ open class Message private constructor() {
     class Users(val prefix: String, val channel: String, val nick: String, val users: List<String>) : Message()
     class EndOfUsers(val prefix: String, val channel: String, val nick: String) : Message()
     class EndOfMotd(val prefix: String, val nick: String) : Message()
+    class Unknown(val prefix: String, val command: String, val params: List<String>) : Message()
+    class Cap(val prefix: String, val subcommand: String, val params: List<String>) : Message()
+    class Welcome(val prefix: String, val nick: String) : Message()
 }
 
 object ClientParser {
@@ -80,7 +83,8 @@ object ClientParser {
             "QUIT" -> Message.Quit(atoms.prefix, atoms.params[0])
             "NICK" -> Message.Nick(atoms.prefix, atoms.params[0])
             "TOPIC" -> Message.Topic(atoms.prefix, atoms.params[0], atoms.params[1])
-            else -> throw IllegalArgumentException("Unknown command: ${atoms.command}")
+            "CAP" -> Message.Cap(atoms.prefix, atoms.params[0], atoms.params.drop(1))
+            else -> Message.Unknown(atoms.prefix, atoms.command, atoms.params)
         }
     }
 }

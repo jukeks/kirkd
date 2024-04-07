@@ -8,22 +8,41 @@ import com.jukk.kirk.server.Channel as ServerChannel
 
 
 class Handler(
-    val serverIdentity: String,
-    val state: State,
+    private val serverIdentity: String,
+    private val state: State,
 ) {
     val commandChannel: Channel<Command> = Channel(Channel.UNLIMITED)
 
     suspend fun handle() {
         for (command in commandChannel) {
-            val message = command.message
-            val client = command.client
-            when (message) {
-                is Message.Nick -> handleNick(client, message)
-                is Message.User -> handleUser(client, message)
-                is Message.Join -> handleJoin(client, message)
-                is Message.Part -> handlePart(client, message)
-                is Message.Privmsg -> handlePrivmsg(client, message)
+            when (command) {
+                is Command.Message -> handleMessage(command.client, command.message)
+                is Command.Close -> handleClose(command.client)
+                is Command.Healthcheck -> handleHealthcheck(command.client)
             }
+        }
+    }
+
+    suspend fun handleHealthcheck(client: Client) {
+        val pong = Message.Pong(serverIdentity, "healthcheck")
+        val raw = ServerMessage.serialize(pong)
+        client.sendMessage(raw)
+    }
+
+    suspend fun handleClose(client: Client) {
+        state.removeClient(client)
+        client.close()
+    }
+
+    suspend fun handleMessage(client: Client, message: Message) {
+        when (message) {
+            is Message.Nick -> handleNick(client, message)
+            is Message.User -> handleUser(client, message)
+            is Message.Join -> handleJoin(client, message)
+            is Message.Part -> handlePart(client, message)
+            is Message.Privmsg -> handlePrivmsg(client, message)
+            is Message.Ping -> handlePing(client, message)
+            is Message.Cap -> handleCap(client, message)
         }
     }
 
@@ -36,9 +55,13 @@ class Handler(
         client.setRealName(message.realName)
         state.addClient(client)
 
+        val welcome = Message.Welcome(serverIdentity, client.getNick())
         val endOfMotd = Message.EndOfMotd(serverIdentity, client.getNick())
-        val raw = ServerMessage.serialize(endOfMotd)
-        client.sendMessage(raw)
+
+        listOf(welcome, endOfMotd).map {
+            val raw = ServerMessage.serialize(it)
+            client.sendMessage(raw)
+        }
     }
 
     suspend fun handleJoin(client: Client, message: Message.Join) {
@@ -84,11 +107,34 @@ class Handler(
         val channel = state.getChannel(message.target)
         if (channel == null) {
             val targetClient = state.getClient(message.target)
-            targetClient?.sendMessage(message.content)
+            val privmsg = Message.Privmsg(client.getFullmask(), message.target, message.content)
+            val raw = ServerMessage.serialize(privmsg)
+            targetClient?.sendMessage(raw)
         } else {
+            val privmsg = Message.Privmsg(client.getFullmask(), message.target, message.content)
+            val raw = ServerMessage.serialize(privmsg)
             for (userClient in channel.getClients()) {
-                userClient.sendMessage(message.content)
+                if (userClient == client) continue
+                userClient.sendMessage(raw)
             }
+        }
+    }
+
+    suspend fun handlePing(client: Client, message: Message.Ping) {
+        val pong = Message.Pong(serverIdentity, message.id)
+        val raw = ServerMessage.serialize(pong)
+        client.sendMessage(raw)
+    }
+
+    suspend fun handleCap(client: Client, message: Message.Cap) {
+        if (message.subcommand == "LS") {
+            val cap = Message.Cap(serverIdentity, "LS", emptyList())
+            val raw = ServerMessage.serialize(cap)
+            client.sendMessage(raw)
+        } else if (message.subcommand == "REQ") {
+            val nak = Message.Cap(serverIdentity, "NAK", emptyList())
+            val raw = ServerMessage.serialize(nak)
+            client.sendMessage(raw)
         }
     }
 }
