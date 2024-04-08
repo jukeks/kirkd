@@ -67,7 +67,7 @@ class Handler(
     suspend fun handleJoin(client: Client, message: Message.Join) {
         var channel = state.getChannel(message.channel)
         if (channel == null) {
-            channel = ServerChannel(message.channel, mutableListOf(client))
+            channel = ServerChannel(message.channel, mutableListOf())
             state.addChannel(channel)
         }
         channel.addClient(client)

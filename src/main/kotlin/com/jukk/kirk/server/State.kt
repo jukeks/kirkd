@@ -4,6 +4,9 @@ import com.jukk.kirk.client.Client
 
 data class Channel(val name: String, private val clients: MutableList<Client>) {
     fun addClient(client: Client) {
+        if (clients.contains(client)) {
+            return
+        }
         clients.add(client)
     }
 
@@ -26,7 +29,11 @@ class State {
 
     fun removeClient(client: Client) {
         clients.remove(client)
-        // todo remove from all channels
+
+        // most inefficient way to remove a client from all channels
+        for ((_, channel) in channels) {
+            channel.removeClient(client)
+        }
     }
 
     fun getClient(target: String): Client? {

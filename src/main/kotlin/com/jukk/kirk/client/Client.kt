@@ -9,6 +9,7 @@ import io.ktor.util.network.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
 
 class Client(
     private val socket: Socket,
@@ -63,7 +64,11 @@ class Client(
     }
 
     suspend fun sendMessage(message: String) {
-        outQueue.send(message)
+        try {
+            outQueue.send(message)
+        } catch (e: ClosedSendChannelException) {
+            println("sending $message: Already closed: $e")
+        }
     }
 
     private suspend fun receiveMessage(): Message? {
@@ -77,7 +82,7 @@ class Client(
 
     suspend fun close() {
         outQueue.close()
-        socket.awaitClosed()
+        socket.close()
     }
 
     private suspend fun processOutQueue() {
@@ -107,8 +112,8 @@ class Client(
 
         writerJob.cancel()
         healthcheckJob.cancel()
-        close()
+        commandChannel.send(Command.Close(this))
 
-        println("Client disconnected")
+        println("Client disconnected $nick!$user@$hostname")
     }
 }
