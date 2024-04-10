@@ -1,7 +1,7 @@
-package com.jukk.kirk
+package com.jukk.kirkd
 
 import kotlinx.coroutines.runBlocking
-import com.jukk.kirk.server.Server
+import com.jukk.kirkd.server.Server
 
 
 fun main() {

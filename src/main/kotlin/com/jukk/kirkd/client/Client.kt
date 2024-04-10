@@ -1,10 +1,10 @@
-package com.jukk.kirk.client
+package com.jukk.kirkd.client
 
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
-import com.jukk.kirk.protocol.ClientParser
-import com.jukk.kirk.protocol.Message
-import com.jukk.kirk.server.Command
+import com.jukk.kirkd.protocol.ClientParser
+import com.jukk.kirkd.protocol.Message
+import com.jukk.kirkd.server.Command
 import io.ktor.util.network.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope

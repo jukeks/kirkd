@@ -1,11 +1,11 @@
-package com.jukk.kirk.server
+package com.jukk.kirkd.server
 
 
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
 
-import com.jukk.kirk.client.Client
+import com.jukk.kirkd.client.Client
 import java.util.concurrent.atomic.AtomicBoolean
 
 class Server(val hostname: String, val port: Int, private val alive: AtomicBoolean = AtomicBoolean(true)) {

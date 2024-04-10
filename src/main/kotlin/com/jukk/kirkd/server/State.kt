@@ -1,6 +1,6 @@
-package com.jukk.kirk.server
+package com.jukk.kirkd.server
 
-import com.jukk.kirk.client.Client
+import com.jukk.kirkd.client.Client
 
 data class Channel(val name: String, private val clients: MutableList<Client>) {
     fun addClient(client: Client) {

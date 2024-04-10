@@ -1,4 +1,4 @@
-package com.jukk.kirk.protocol
+package com.jukk.kirkd.protocol
 
 data class Atoms(
     val prefix: String,

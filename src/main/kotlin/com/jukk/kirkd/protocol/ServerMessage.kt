@@ -1,4 +1,4 @@
-package com.jukk.kirk.protocol
+package com.jukk.kirkd.protocol
 
 object ServerMessage {
     fun serialize(message: Message): String {

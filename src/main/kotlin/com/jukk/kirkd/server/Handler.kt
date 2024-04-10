@@ -1,10 +1,10 @@
-package com.jukk.kirk.server
+package com.jukk.kirkd.server
 
-import com.jukk.kirk.client.Client
-import com.jukk.kirk.protocol.Message
-import com.jukk.kirk.protocol.ServerMessage
+import com.jukk.kirkd.client.Client
+import com.jukk.kirkd.protocol.Message
+import com.jukk.kirkd.protocol.ServerMessage
 import kotlinx.coroutines.channels.Channel
-import com.jukk.kirk.server.Channel as ServerChannel
+import com.jukk.kirkd.server.Channel as ServerChannel
 
 
 class Handler(
