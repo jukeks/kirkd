@@ -2,7 +2,7 @@ package com.jukk.kirkd.client
 
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
-import com.jukk.kirkd.protocol.ClientParser
+import com.jukk.kirkd.protocol.ClientMessage
 import com.jukk.kirkd.protocol.Message
 import com.jukk.kirkd.server.Command
 import io.ktor.util.network.*
@@ -75,7 +75,7 @@ class Client(
         val line = receive()
         return line?.let {
             println("Received: $it")
-            val message = ClientParser.parse(it)
+            val message = ClientMessage.parse(it)
             message
         }
     }

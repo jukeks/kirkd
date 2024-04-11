@@ -1,5 +1,6 @@
 package com.jukk.kirkd.server
 
+import java.time.Instant
 import com.jukk.kirkd.client.Client
 import com.jukk.kirkd.protocol.Message
 import com.jukk.kirkd.protocol.ServerMessage
@@ -24,8 +25,9 @@ class Handler(
     }
 
     suspend fun handleHealthcheck(client: Client) {
-        val pong = Message.Pong(serverIdentity, "healthcheck")
-        val raw = ServerMessage.serialize(pong)
+        val ts = Instant.now().toEpochMilli()
+        val ping = Message.Ping(serverIdentity, ts.toString())
+        val raw = ServerMessage.serialize(ping)
         client.sendMessage(raw)
     }
 
@@ -47,7 +49,14 @@ class Handler(
     }
 
     suspend fun handleNick(client: Client, message: Message.Nick) {
-        client.setNick(message.nick) // TODO check if nick is already in use
+        if (state.addNewNick(message.nick).getOrNull() == null) {
+            val nickError = Message.NickInUse(serverIdentity, message.nick)
+            val raw = ServerMessage.serialize(nickError)
+            client.sendMessage(raw)
+            return
+        }
+
+        client.setNick(message.nick)
     }
 
     suspend fun handleUser(client: Client, message: Message.User) {
@@ -67,7 +76,7 @@ class Handler(
     suspend fun handleJoin(client: Client, message: Message.Join) {
         var channel = state.getChannel(message.channel)
         if (channel == null) {
-            channel = ServerChannel(message.channel, mutableListOf())
+            channel = ServerChannel(message.channel, mutableSetOf())
             state.addChannel(channel)
         }
         channel.addClient(client)

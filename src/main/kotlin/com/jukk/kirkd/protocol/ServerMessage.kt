@@ -24,6 +24,8 @@ object ServerMessage {
                 ":${message.prefix} CAP * ${message.subcommand} :${message.params.joinToString(" ")}"
             is Message.Welcome ->
                 ":${message.prefix} 001 ${message.nick} :Welcome to the Internet Relay Network ${message.nick}"
+            is Message.NickInUse ->
+                ":${message.prefix} 433 ${message.nick} :Nickname already in use"
 
             else -> throw IllegalArgumentException("Unknown message type")
         }
