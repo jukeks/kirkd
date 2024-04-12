@@ -14,30 +14,42 @@ class Handler(
 ) {
     val commandChannel: Channel<Command> = Channel(Channel.UNLIMITED)
 
-    suspend fun handle() {
+    suspend fun handlerLoop() {
         for (command in commandChannel) {
-            when (command) {
-                is Command.Message -> handleMessage(command.client, command.message)
-                is Command.Close -> handleClose(command.client)
-                is Command.Healthcheck -> handleHealthcheck(command.client)
+            val results = handle(command)
+            for (result in results) {
+                for (message in result.messages) {
+                    val serialized = ServerMessage.serialize(message)
+                    for (client in result.clients) {
+                        client.sendMessage(serialized)
+                    }
+                }
             }
         }
     }
 
-    suspend fun handleHealthcheck(client: Client) {
-        val ts = Instant.now().toEpochMilli()
-        val ping = Message.Ping(serverIdentity, ts.toString())
-        val raw = ServerMessage.serialize(ping)
-        client.sendMessage(raw)
+    fun handle(command: Command): List<CommandOutput> {
+        return when (command) {
+            is Command.Message -> handleMessage(command.client, command.message)
+            is Command.Close -> handleClose(command.client)
+            is Command.Healthcheck -> handleHealthcheck(command.client)
+            else -> emptyList()
+        }
     }
 
-    suspend fun handleClose(client: Client) {
+    fun handleHealthcheck(client: Client): List<CommandOutput> {
+        val ts = Instant.now().toEpochMilli()
+        return listOf(CommandOutput(client, Message.Ping(serverIdentity, ts.toString())))
+    }
+
+    fun handleClose(client: Client): List<CommandOutput> {
         state.removeClient(client)
         client.close()
+        return emptyList() // TODO: send quit to all channels
     }
 
-    suspend fun handleMessage(client: Client, message: Message) {
-        when (message) {
+    fun handleMessage(client: Client, message: Message): List<CommandOutput> {
+        return when (message) {
             is Message.Nick -> handleNick(client, message)
             is Message.User -> handleUser(client, message)
             is Message.Join -> handleJoin(client, message)
@@ -45,21 +57,21 @@ class Handler(
             is Message.Privmsg -> handlePrivmsg(client, message)
             is Message.Ping -> handlePing(client, message)
             is Message.Cap -> handleCap(client, message)
+            else -> emptyList()
         }
     }
 
-    suspend fun handleNick(client: Client, message: Message.Nick) {
+    fun handleNick(client: Client, message: Message.Nick): List<CommandOutput> {
         if (state.addNewNick(message.nick).getOrNull() == null) {
-            val nickError = Message.NickInUse(serverIdentity, message.nick)
-            val raw = ServerMessage.serialize(nickError)
-            client.sendMessage(raw)
-            return
+            return listOf(CommandOutput(listOf(client), Message.NickInUse(serverIdentity, message.nick)))
         }
 
         client.setNick(message.nick)
+        // TODO: send NICK to all channels
+        return emptyList()
     }
 
-    suspend fun handleUser(client: Client, message: Message.User) {
+    fun handleUser(client: Client, message: Message.User): List<CommandOutput> {
         client.setUser(message.user)
         client.setRealName(message.realName)
         state.addClient(client)
@@ -67,13 +79,10 @@ class Handler(
         val welcome = Message.Welcome(serverIdentity, client.getNick())
         val endOfMotd = Message.EndOfMotd(serverIdentity, client.getNick())
 
-        listOf(welcome, endOfMotd).map {
-            val raw = ServerMessage.serialize(it)
-            client.sendMessage(raw)
-        }
+        return listOf(CommandOutput(client, listOf(welcome, endOfMotd)))
     }
 
-    suspend fun handleJoin(client: Client, message: Message.Join) {
+    fun handleJoin(client: Client, message: Message.Join): List<CommandOutput> {
         var channel = state.getChannel(message.channel)
         if (channel == null) {
             channel = ServerChannel(message.channel, mutableSetOf())
@@ -81,24 +90,22 @@ class Handler(
         }
         channel.addClient(client)
 
-        val proxiedPart = Message.Join(client.getFullmask(), message.channel)
-        val raw = ServerMessage.serialize(proxiedPart)
-        for (userClient in channel.getClients()) {
-            if (userClient == client) continue
-            userClient.sendMessage(raw)
-        }
+        val proxiedJoin = Message.Join(client.getFullmask(), message.channel)
+        val channelClients = channel.getClients().toList()
 
         val usersMsg =
             Message.Users(serverIdentity, message.channel, client.getNick(), channel.getClients().map { it.getNick() })
-        val usersRaw = ServerMessage.serialize(usersMsg)
-        client.sendMessage(usersRaw)
         val endOfUsers = Message.EndOfUsers(serverIdentity, message.channel, client.getNick())
-        val endOfUsersRaw = ServerMessage.serialize(endOfUsers)
-        client.sendMessage(endOfUsersRaw)
+
+        return listOf(
+            CommandOutput(channelClients, proxiedJoin),
+            CommandOutput(client, listOf(usersMsg, endOfUsers))
+        )
     }
 
-    suspend fun handlePart(client: Client, message: Message.Part) {
-        val channel = state.getChannel(message.channel) ?: return
+    fun handlePart(client: Client, message: Message.Part): List<CommandOutput> {
+        val channel = state.getChannel(message.channel) ?: return emptyList()
+        val channelClients = channel.getClients().toList()
         channel.removeClient(client)
 
         if (channel.getClients().isEmpty()) {
@@ -106,44 +113,35 @@ class Handler(
         }
 
         val proxiedPart = Message.Part(client.getFullmask(), message.channel)
-        val raw = ServerMessage.serialize(proxiedPart)
-        for (userClient in channel.getClients()) {
-            userClient.sendMessage(raw)
-        }
+        return listOf(CommandOutput(channelClients, proxiedPart))
     }
 
-    suspend fun handlePrivmsg(client: Client, message: Message.Privmsg) {
+    fun handlePrivmsg(client: Client, message: Message.Privmsg): List<CommandOutput> {
         val channel = state.getChannel(message.target)
-        if (channel == null) {
-            val targetClient = state.getClient(message.target)
-            val privmsg = Message.Privmsg(client.getFullmask(), message.target, message.content)
-            val raw = ServerMessage.serialize(privmsg)
-            targetClient?.sendMessage(raw)
+        return if (channel == null) {
+            val targetClient = state.getClient(message.target) ?: return emptyList()
+            val privMsg = Message.Privmsg(client.getFullmask(), message.target, message.content)
+            listOf(CommandOutput(targetClient, privMsg))
         } else {
-            val privmsg = Message.Privmsg(client.getFullmask(), message.target, message.content)
-            val raw = ServerMessage.serialize(privmsg)
-            for (userClient in channel.getClients()) {
-                if (userClient == client) continue
-                userClient.sendMessage(raw)
-            }
+            val privMsg = Message.Privmsg(client.getFullmask(), message.target, message.content)
+            listOf(CommandOutput(channel.getClients().filter { it != client }, privMsg))
         }
     }
 
-    suspend fun handlePing(client: Client, message: Message.Ping) {
+    fun handlePing(client: Client, message: Message.Ping): List<CommandOutput> {
         val pong = Message.Pong(serverIdentity, message.id)
-        val raw = ServerMessage.serialize(pong)
-        client.sendMessage(raw)
+        return listOf(CommandOutput(client, pong))
     }
 
-    suspend fun handleCap(client: Client, message: Message.Cap) {
-        if (message.subcommand == "LS") {
+    fun handleCap(client: Client, message: Message.Cap): List<CommandOutput> {
+        return if (message.subcommand == "LS") {
             val cap = Message.Cap(serverIdentity, "LS", emptyList())
-            val raw = ServerMessage.serialize(cap)
-            client.sendMessage(raw)
+            listOf(CommandOutput(client, cap))
         } else if (message.subcommand == "REQ") {
             val nak = Message.Cap(serverIdentity, "NAK", emptyList())
-            val raw = ServerMessage.serialize(nak)
-            client.sendMessage(raw)
+            listOf(CommandOutput(client, nak))
+        } else {
+            emptyList()
         }
     }
 }

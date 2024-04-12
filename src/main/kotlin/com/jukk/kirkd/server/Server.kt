@@ -17,7 +17,7 @@ class Server(val hostname: String, val port: Int, private val alive: AtomicBoole
         val handler = Handler(hostname, state)
 
         scope.launch {
-            handler.handle()
+            handler.handlerLoop()
         }
 
         println("Server started")

@@ -80,7 +80,7 @@ class Client(
         }
     }
 
-    suspend fun close() {
+    fun close() {
         outQueue.close()
         socket.close()
     }

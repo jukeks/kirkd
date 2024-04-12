@@ -7,3 +7,11 @@ open class Command private constructor() {
     class Close(val client: Client) : Command()
     class Healthcheck(val client: Client) : Command()
 }
+
+data class CommandOutput(
+    val clients: List<Client>, val messages: List<com.jukk.kirkd.protocol.Message>
+) {
+    constructor(client: Client, message: com.jukk.kirkd.protocol.Message) : this(listOf(client), listOf(message))
+    constructor(clients: List<Client>, message: com.jukk.kirkd.protocol.Message) : this(clients, listOf(message))
+    constructor(client: Client, messages: List<com.jukk.kirkd.protocol.Message>) : this(listOf(client), messages)
+}
