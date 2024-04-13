@@ -48,7 +48,7 @@ class ServerMessageTest : FunSpec({
     }
 
     test("serializing TOPICREPLY") {
-        val serialized = ServerMessage.serialize(Message.TopicReply("nick!user@host", "#channel", "new topic"))
-        serialized shouldBe ":nick!user@host 332 #channel :new topic\r\n"
+        val serialized = ServerMessage.serialize(Message.TopicReply("server", "#channel", "tester","new topic"))
+        serialized shouldBe ":server 332 tester #channel :new topic\r\n"
     }
 })

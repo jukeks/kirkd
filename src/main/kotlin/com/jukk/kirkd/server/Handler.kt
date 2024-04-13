@@ -155,10 +155,11 @@ class Handler(
         val usersMsg =
             Message.Users(serverIdentity, message.channel, client.getNick(), channelClients.map { it.getNick() })
         val endOfUsers = Message.EndOfUsers(serverIdentity, message.channel, client.getNick())
+            val topicReply = Message.TopicReply(serverIdentity, message.channel, client.getNick(), channel.topic)
 
         return listOf(
             CommandOutput(channelClients, proxiedJoin),
-            CommandOutput(client, listOf(usersMsg, endOfUsers))
+            CommandOutput(client, listOf(usersMsg, endOfUsers, topicReply))
         )
     }
 

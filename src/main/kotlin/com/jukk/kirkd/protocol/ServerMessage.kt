@@ -14,7 +14,7 @@ object ServerMessage {
             is Message.Quit -> ":${message.prefix} QUIT :${message.message}"
             is Message.Nick -> ":${message.prefix} NICK ${message.nick}"
             is Message.Topic -> ":${message.prefix} TOPIC ${message.channel} :${message.topic}"
-            is Message.TopicReply -> ":${message.prefix} 332 ${message.channel} :${message.topic}"
+            is Message.TopicReply -> ":${message.prefix} 332 ${message.nick} ${message.channel} :${message.topic}"
             is Message.Users -> ":${message.prefix} 353 ${message.nick} @ ${message.channel} :${
                 message.users.joinToString(
                     " "

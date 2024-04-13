@@ -10,7 +10,7 @@ open class Message private constructor() {
     class Quit(val prefix: String, val message: String) : Message()
     class Nick(val prefix: String, val nick: String) : Message()
     class Topic(val prefix: String, val channel: String, val topic: String) : Message()
-    class TopicReply(val prefix: String, val channel: String, val topic: String) : Message()
+    class TopicReply(val prefix: String, val channel: String, val nick: String, val topic: String) : Message()
     class Users(val prefix: String, val channel: String, val nick: String, val users: List<String>) : Message()
     class EndOfUsers(val prefix: String, val channel: String, val nick: String) : Message()
     class EndOfMotd(val prefix: String, val nick: String) : Message()

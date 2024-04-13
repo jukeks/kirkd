@@ -2,7 +2,7 @@ package com.jukk.kirkd.server
 
 import com.jukk.kirkd.client.Client
 
-data class Channel(val name: String, private val clients: MutableSet<Client>) {
+data class Channel(val name: String, private val clients: MutableSet<Client>, var topic: String = "") {
     fun addClient(client: Client) {
         clients.add(client)
     }
