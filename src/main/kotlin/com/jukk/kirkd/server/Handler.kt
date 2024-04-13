@@ -5,8 +5,12 @@ import com.jukk.kirkd.client.Client
 import com.jukk.kirkd.protocol.Message
 import com.jukk.kirkd.protocol.ServerMessage
 import kotlinx.coroutines.channels.Channel
+import mu.KotlinLogging
 import com.jukk.kirkd.server.Channel as ServerChannel
 
+class ClientNotRegisteredException : Exception()
+
+private val logger = KotlinLogging.logger {}
 
 class Handler(
     private val serverIdentity: String,
@@ -48,7 +52,24 @@ class Handler(
         return emptyList() // TODO: send quit to all channels
     }
 
+    fun clientAccessControl(client: Client, message: Message) {
+        if (!client.isRegistered()) {
+            // only NICK and USER and CAP and QUIT messages are allowed
+            when (message) {
+                is Message.Nick, is Message.User, is Message.Cap, is Message.Quit -> return
+            }
+            throw ClientNotRegisteredException()
+        }
+    }
+
     fun handleMessage(client: Client, message: Message): List<CommandOutput> {
+        try {
+            clientAccessControl(client, message)
+        } catch (e: Exception) {
+            logger.error(e) { "client access control failure" }
+            return emptyList()
+        }
+
         return when (message) {
             is Message.Nick -> handleNick(client, message)
             is Message.User -> handleUser(client, message)

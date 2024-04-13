@@ -20,7 +20,9 @@ class HandlerTest : FunSpec({
 
     fun newRegisteredClient(
         handler: Handler,
+        state: State,
         nick: String,
+        channels: List<String> = emptyList(),
         user: String = "user",
         realname: String = "realname",
         hostname: String = "hostname"
@@ -32,6 +34,12 @@ class HandlerTest : FunSpec({
         handler.handle(Command.Message(client, userMsg))
         client.isRegistered() shouldBe true
         client.hasAllInfo() shouldBe true
+
+        for (channel in channels) {
+            val join = Message.Join("", channel)
+            handler.handle(Command.Message(client, join))
+            state.getChannel(channel)!!.getClients() shouldContain client
+        }
 
         return client
     }
@@ -135,14 +143,15 @@ class HandlerTest : FunSpec({
     }
 
     test("registeredClient helper") {
-        newRegisteredClient(Handler("testserver", State()), "tester1")
+        val state = State()
+        newRegisteredClient(Handler("testserver", state), state, "tester1")
     }
 
     test("join") {
         val testChannel = "#test"
-        val client = newRegisteredClient(Handler("testserver", State()), "tester1")
         val state = State()
         val handler = Handler("testserver", state)
+        val client = newRegisteredClient(handler, state, "tester1")
 
         val join = Message.Join("", testChannel)
         val output = handler.handle(Command.Message(client, join))
@@ -153,7 +162,7 @@ class HandlerTest : FunSpec({
         joinAnnouncement.prefix shouldBe client.getFullmask()
         joinAnnouncement.channel shouldBe "#test"
 
-        val otherClient = newRegisteredClient(handler, "tester2")
+        val otherClient = newRegisteredClient(handler, state,"tester2")
         val otherJoin = Message.Join("", testChannel)
         val otherOutput = handler.handle(Command.Message(otherClient, otherJoin))
 
@@ -183,9 +192,9 @@ class HandlerTest : FunSpec({
 
     test("part") {
         val testChannel = "#test"
-        val client = newRegisteredClient(Handler("testserver", State()), "tester1")
         val state = State()
         val handler = Handler("testserver", state)
+        val client = newRegisteredClient(handler, state, "tester1")
 
         val join = Message.Join("", testChannel)
         handler.handle(Command.Message(client, join))
@@ -202,5 +211,36 @@ class HandlerTest : FunSpec({
 
         val channel = state.getChannel(testChannel)
         channel shouldBe null
+    }
+
+    test("channel message with two clients") {
+        val testChannel = "#test"
+        val state = State()
+        val handler = Handler("testserver", state)
+        val client1 = newRegisteredClient(handler, state,"tester1", listOf(testChannel))
+        val client2 = newRegisteredClient(handler, state, "tester2", listOf(testChannel))
+
+        val message = Message.Privmsg("", testChannel, "hello")
+        val output = handler.handle(Command.Message(client1, message))
+
+        output.size shouldBe 1
+        output[0].clients.size shouldBe 1
+        output[0].clients shouldContain client2
+        val privmsg = output[0].messages[0] as Message.Privmsg
+        privmsg.prefix shouldBe client1.getFullmask()
+        privmsg.target shouldBe testChannel
+        privmsg.content shouldBe "hello"
+    }
+
+    test("access control") {
+        val state = State()
+        val handler = Handler("testserver", state)
+        val client = newClient()
+
+        val message = Message.Join("", "#test")
+        val output = handler.handle(Command.Message(client, message))
+
+        output.size shouldBe 0
+        state.getChannel("#test") shouldBe null
     }
 })
