@@ -62,8 +62,8 @@ class State {
         }
     }
 
-    fun getClient(target: String): Client? {
-        return null
+    fun getClient(nick: String): Client? {
+        return clients.find { it.getNick() == nick }
     }
 
     fun addChannel(channel: Channel) {

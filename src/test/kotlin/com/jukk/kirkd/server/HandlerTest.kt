@@ -86,4 +86,32 @@ class HandlerTest : FunSpec({
         response.nick shouldBe ""
         response.newNick shouldBe "tester1"
     }
+
+    test("user registration") {
+        val client = newClient()
+        val state = State()
+        val handler = Handler("testserver", state)
+
+        val nick = Message.Nick("", "tester1")
+        handler.handle(Command.Message(client, nick))
+        val user = Message.User("user", "host", "testserver", "realname")
+        val output = handler.handle(Command.Message(client, user))
+
+        client.getUser() shouldBe "user"
+        client.getRealName() shouldBe "realname"
+        client.getNick() shouldBe "tester1"
+
+        client.isRegistered() shouldBe true
+        client.hasAllInfo() shouldBe true
+
+        output.size shouldBe 1
+        output[0].clients.size shouldBe 1
+        output[0].clients[0] shouldBe client
+        val response1 = output[0].messages[0] as Message.Welcome
+        response1.nick shouldBe "tester1"
+        val response2 = output[0].messages.last() as Message.EndOfMotd
+        response2.nick shouldBe "tester1"
+
+        state.getClient("tester1") shouldBe client
+    }
 })
