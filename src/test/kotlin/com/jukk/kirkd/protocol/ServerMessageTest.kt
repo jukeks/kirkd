@@ -15,7 +15,10 @@ class ServerMessageTest : FunSpec({
     }
 
     test("serializing PART") {
-        val serialized = ServerMessage.serialize(Message.Part("nick!user@host", "#channel"))
+        val serializedWithReason = ServerMessage.serialize(Message.Part("nick!user@host", "#channel", "reason"))
+        serializedWithReason shouldBe ":nick!user@host PART #channel :reason\r\n"
+
+        val serialized = ServerMessage.serialize(Message.Part("nick!user@host", "#channel", null))
         serialized shouldBe ":nick!user@host PART #channel\r\n"
     }
 

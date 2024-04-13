@@ -200,7 +200,7 @@ class HandlerTest : FunSpec({
         handler.handle(Command.Message(client, join))
         state.getChannel(testChannel)!!.getClients().size shouldBe 1
 
-        val part = Message.Part("", testChannel)
+        val part = Message.Part("", testChannel, null)
         val output = handler.handle(Command.Message(client, part))
 
         output.size shouldBe 1

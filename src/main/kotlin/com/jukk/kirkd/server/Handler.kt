@@ -153,7 +153,7 @@ class Handler(
         val channelClients = channel.getClients().toList()
 
         val usersMsg =
-            Message.Users(serverIdentity, message.channel, client.getNick(), channelClients.map { it.getNick() })
+            Message.Users(serverIdentity, message.channel, channelClients.map { it.getNick() })
         val endOfUsers = Message.EndOfUsers(serverIdentity, message.channel, client.getNick())
 
         return listOf(
