@@ -154,7 +154,7 @@ class Handler(
 
         val usersMsg =
             Message.Users(serverIdentity, message.channel, channelClients.map { it.getNick() })
-        val endOfUsers = Message.EndOfUsers(serverIdentity, message.channel, client.getNick())
+        val endOfUsers = Message.EndOfUsers(serverIdentity, message.channel)
 
         return listOf(
             CommandOutput(channelClients, proxiedJoin),

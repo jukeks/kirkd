@@ -21,7 +21,7 @@ object ServerMessage {
                 )
             }"
 
-            is Message.EndOfUsers -> ":${message.prefix} 366 ${message.nick} @ ${message.channel} :End of /NAMES list"
+            is Message.EndOfUsers -> ":${message.prefix} 366 @ ${message.channel} :End of /NAMES list"
             is Message.EndOfMotd -> ":${message.prefix} 376 ${message.nick} :End of /MOTD command"
             is Message.Cap ->
                 ":${message.prefix} CAP * ${message.subcommand} :${message.params.joinToString(" ")}"
