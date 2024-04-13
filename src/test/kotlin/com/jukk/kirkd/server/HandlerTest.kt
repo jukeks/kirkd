@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import com.jukk.kirkd.client.Client
 import com.jukk.kirkd.protocol.Message
+import io.kotest.matchers.collections.shouldContain
 import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.*
@@ -15,6 +16,24 @@ import kotlin.coroutines.CoroutineContext
 class HandlerTest : FunSpec({
     fun newClient(): Client {
         return Client(null, Channel(Channel.UNLIMITED))
+    }
+
+    fun newRegisteredClient(
+        handler: Handler,
+        nick: String,
+        user: String = "user",
+        realname: String = "realname",
+        hostname: String = "hostname"
+    ): Client {
+        val client = newClient()
+        val nickMsg = Message.Nick("", nick)
+        handler.handle(Command.Message(client, nickMsg))
+        val userMsg = Message.User(user, realname, "server", hostname)
+        handler.handle(Command.Message(client, userMsg))
+        client.isRegistered() shouldBe true
+        client.hasAllInfo() shouldBe true
+
+        return client
     }
 
     test("handle cap") {
@@ -113,5 +132,75 @@ class HandlerTest : FunSpec({
         response2.nick shouldBe "tester1"
 
         state.getClient("tester1") shouldBe client
+    }
+
+    test("registeredClient helper") {
+        newRegisteredClient(Handler("testserver", State()), "tester1")
+    }
+
+    test("join") {
+        val testChannel = "#test"
+        val client = newRegisteredClient(Handler("testserver", State()), "tester1")
+        val state = State()
+        val handler = Handler("testserver", state)
+
+        val join = Message.Join("", testChannel)
+        val output = handler.handle(Command.Message(client, join))
+
+        output.size shouldBe 2
+        output[0].clients shouldContain client
+        val joinAnnouncement = output[0].messages[0] as Message.Join
+        joinAnnouncement.prefix shouldBe client.getFullmask()
+        joinAnnouncement.channel shouldBe "#test"
+
+        val otherClient = newRegisteredClient(handler, "tester2")
+        val otherJoin = Message.Join("", testChannel)
+        val otherOutput = handler.handle(Command.Message(otherClient, otherJoin))
+
+        otherOutput.size shouldBe 2
+        val otherJoinAnnouncement = otherOutput[0].messages[0] as Message.Join
+        otherOutput[0].clients shouldContain otherClient
+        otherOutput[0].clients shouldContain client
+
+        otherJoinAnnouncement.prefix shouldBe otherClient.getFullmask()
+        otherJoinAnnouncement.channel shouldBe "#test"
+
+        val channel = state.getChannel(testChannel)!!
+        channel.getClients().size shouldBe 2
+        channel.getClients() shouldContain client
+        channel.getClients() shouldContain otherClient
+
+        val usersMessage = otherOutput[1].messages[0] as Message.Users
+        usersMessage.prefix shouldBe "testserver"
+        usersMessage.channel shouldBe testChannel
+        usersMessage.users shouldContain client.getNick()
+        usersMessage.users shouldContain otherClient.getNick()
+
+        val endOfUsersMessage = otherOutput[1].messages[1] as Message.EndOfUsers
+        endOfUsersMessage.prefix shouldBe "testserver"
+        endOfUsersMessage.channel shouldBe testChannel
+    }
+
+    test("part") {
+        val testChannel = "#test"
+        val client = newRegisteredClient(Handler("testserver", State()), "tester1")
+        val state = State()
+        val handler = Handler("testserver", state)
+
+        val join = Message.Join("", testChannel)
+        handler.handle(Command.Message(client, join))
+        state.getChannel(testChannel)!!.getClients().size shouldBe 1
+
+        val part = Message.Part("", testChannel)
+        val output = handler.handle(Command.Message(client, part))
+
+        output.size shouldBe 1
+        output[0].clients shouldContain client
+        val partAnnouncement = output[0].messages[0] as Message.Part
+        partAnnouncement.prefix shouldBe client.getFullmask()
+        partAnnouncement.channel shouldBe "#test"
+
+        val channel = state.getChannel(testChannel)
+        channel shouldBe null
     }
 })
