@@ -15,13 +15,13 @@ object ServerMessage {
             is Message.Nick -> ":${message.prefix} NICK ${message.nick}"
             is Message.Topic -> ":${message.prefix} TOPIC ${message.channel} :${message.topic}"
             is Message.TopicReply -> ":${message.prefix} 332 ${message.channel} :${message.topic}"
-            is Message.Users -> ":${message.prefix} 353 @ ${message.channel} :${
+            is Message.Users -> ":${message.prefix} 353 ${message.nick} @ ${message.channel} :${
                 message.users.joinToString(
                     " "
                 )
             }"
 
-            is Message.EndOfUsers -> ":${message.prefix} 366 @ ${message.channel} :End of /NAMES list"
+            is Message.EndOfUsers -> ":${message.prefix} 366 ${message.nick} ${message.channel} :End of /NAMES list"
             is Message.EndOfMotd -> ":${message.prefix} 376 ${message.nick} :End of /MOTD command"
             is Message.Cap ->
                 ":${message.prefix} CAP * ${message.subcommand} :${message.params.joinToString(" ")}"

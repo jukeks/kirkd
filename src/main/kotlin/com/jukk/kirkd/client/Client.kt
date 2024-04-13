@@ -98,7 +98,7 @@ class Client(
         try {
             outQueue.send(message)
         } catch (e: ClosedSendChannelException) {
-            logger.info("sending $message: Already closed: $e")
+            logger.info("sending ${message.trimEnd()}: Already closed: $e")
         }
     }
 
