@@ -10,21 +10,38 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
+import mu.KotlinLogging
+
+
+private val logger = KotlinLogging.logger {}
 
 class Client(
-    private val socket: Socket,
+    private val socket: Socket?,
     private val commandChannel: Channel<Command>,
     outBufferLen: Int = 400
 ) {
-    private val readChannel: ByteReadChannel = socket.openReadChannel()
-    private val writeChannel: ByteWriteChannel = socket.openWriteChannel()
+    private val readChannel: ByteReadChannel? = socket?.openReadChannel()
+    private val writeChannel: ByteWriteChannel? = socket?.openWriteChannel()
 
     private val outQueue = Channel<String>(outBufferLen)
 
     private var nick: String = ""
     private var user: String = ""
     private var realName: String = ""
-    private val hostname: String = socket.remoteAddress.toJavaAddress().hostname
+    private val hostname: String = socket?.remoteAddress?.toJavaAddress()?.hostname ?: ""
+    private var registered = false
+
+    fun isRegistered(): Boolean {
+        return registered
+    }
+
+    fun setRegistered() {
+        registered = true
+    }
+
+    fun hasAllInfo(): Boolean {
+        return nick.isNotEmpty() && user.isNotEmpty() && realName.isNotEmpty()
+    }
 
     fun getFullmask(): String {
         return "$nick!$user@$hostname"
@@ -55,26 +72,27 @@ class Client(
     }
 
     private suspend fun send(message: String) {
-        writeChannel.writeStringUtf8(message)
-        writeChannel.flush()
+        writeChannel?.writeStringUtf8(message)
+        writeChannel?.flush()
+        logger.info("Sent: ${message.trimEnd()}")
     }
 
     private suspend fun receive(): String? {
-        return readChannel.readUTF8Line()
+        return readChannel?.readUTF8Line()
     }
 
     suspend fun sendMessage(message: String) {
         try {
             outQueue.send(message)
         } catch (e: ClosedSendChannelException) {
-            println("sending $message: Already closed: $e")
+            logger.info("sending $message: Already closed: $e")
         }
     }
 
     private suspend fun receiveMessage(): Message? {
         val line = receive()
         return line?.let {
-            println("Received: $it")
+            logger.info("Received: $it")
             val message = ClientMessage.parse(it)
             message
         }
@@ -82,7 +100,7 @@ class Client(
 
     fun close() {
         outQueue.close()
-        socket.close()
+        socket?.close()
     }
 
     private suspend fun processOutQueue() {
@@ -114,6 +132,6 @@ class Client(
         healthcheckJob.cancel()
         commandChannel.send(Command.Close(this))
 
-        println("Client disconnected $nick!$user@$hostname")
+        logger.info("Client disconnected $nick!$user@$hostname")
     }
 }

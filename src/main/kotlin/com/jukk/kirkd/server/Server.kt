@@ -6,7 +6,10 @@ import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
 
 import com.jukk.kirkd.client.Client
+import mu.KotlinLogging
 import java.util.concurrent.atomic.AtomicBoolean
+
+private val logger = KotlinLogging.logger {}
 
 class Server(val hostname: String, val port: Int, private val alive: AtomicBoolean = AtomicBoolean(true)) {
     suspend fun start(scope: CoroutineScope) {
@@ -20,11 +23,11 @@ class Server(val hostname: String, val port: Int, private val alive: AtomicBoole
             handler.handlerLoop()
         }
 
-        println("Server started")
+        logger.info("Server started")
         while (alive.get()) {
             val socket = serverSocket.accept()
 
-            println("Accepted client from ${socket.remoteAddress}")
+            logger.info("Accepted client from ${socket.remoteAddress}")
 
             val client = Client(socket, handler.commandChannel)
             scope.launch {

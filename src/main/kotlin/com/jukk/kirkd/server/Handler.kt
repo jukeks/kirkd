@@ -63,23 +63,41 @@ class Handler(
 
     fun handleNick(client: Client, message: Message.Nick): List<CommandOutput> {
         if (state.addNewNick(message.nick).getOrNull() == null) {
-            return listOf(CommandOutput(listOf(client), Message.NickInUse(serverIdentity, message.nick)))
+            return listOf(
+                CommandOutput(
+                    listOf(client),
+                    Message.NickInUse(serverIdentity, client.getNick(), message.nick)
+                )
+            )
         }
 
         client.setNick(message.nick)
+        if (!client.isRegistered() && client.hasAllInfo()) {
+            return handleRegistrationComplete(client)
+        }
+
         // TODO: send NICK to all channels
         return emptyList()
+    }
+
+    private fun handleRegistrationComplete(client: Client): List<CommandOutput> {
+        state.addClient(client)
+        client.setRegistered()
+        val welcome = Message.Welcome(serverIdentity, client.getNick())
+        val endOfMotd = Message.EndOfMotd(serverIdentity, client.getNick())
+
+        return listOf(CommandOutput(client, listOf(welcome, endOfMotd)))
     }
 
     fun handleUser(client: Client, message: Message.User): List<CommandOutput> {
         client.setUser(message.user)
         client.setRealName(message.realName)
-        state.addClient(client)
 
-        val welcome = Message.Welcome(serverIdentity, client.getNick())
-        val endOfMotd = Message.EndOfMotd(serverIdentity, client.getNick())
+        if (client.isRegistered() || !client.hasAllInfo()) {
+            return emptyList()
+        }
 
-        return listOf(CommandOutput(client, listOf(welcome, endOfMotd)))
+        return handleRegistrationComplete(client)
     }
 
     fun handleJoin(client: Client, message: Message.Join): List<CommandOutput> {

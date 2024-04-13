@@ -22,11 +22,14 @@ object ServerMessage {
             is Message.EndOfMotd -> ":${message.prefix} 376 ${message.nick} :End of /MOTD command"
             is Message.Cap ->
                 ":${message.prefix} CAP * ${message.subcommand} :${message.params.joinToString(" ")}"
+
             is Message.Welcome ->
                 ":${message.prefix} 001 ${message.nick} :Welcome to the Internet Relay Network ${message.nick}"
-            is Message.NickInUse ->
-                ":${message.prefix} 433 ${message.nick} :Nickname already in use"
 
+            is Message.NickInUse -> {
+                val nick = if (message.nick == "") "*" else message.nick
+                ":${message.prefix} 433 ${nick} ${message.newNick} :Nickname already in use"
+            }
             else -> throw IllegalArgumentException("Unknown message type")
         }
 
