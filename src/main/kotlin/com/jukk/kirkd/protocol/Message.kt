@@ -4,7 +4,7 @@ open class Message private constructor() {
     class User(val user: String, val host: String, val servername: String, val realName: String) : Message()
     class Privmsg(val prefix: String, val target: String, val content: String) : Message()
     class Join(val prefix: String, val channel: String) : Message()
-    class Part(val prefix: String, val channel: String) : Message()
+    class Part(val prefix: String, val channel: String, val message: String?) : Message()
     class Ping(val prefix: String, val id: String) : Message()
     class Pong(val prefix: String, val id: String) : Message()
     class Quit(val prefix: String, val message: String) : Message()

@@ -5,7 +5,10 @@ object ServerMessage {
         val line = when (message) {
             is Message.Privmsg -> ":${message.prefix} PRIVMSG ${message.target} :${message.content}"
             is Message.Join -> ":${message.prefix} JOIN ${message.channel}"
-            is Message.Part -> ":${message.prefix} PART ${message.channel}"
+            is Message.Part -> {
+                val content = if (message.message != null) " :${message.message}" else ""
+                ":${message.prefix} PART ${message.channel}$content"
+            }
             is Message.Ping -> ":${message.prefix} PING ${message.prefix} :${message.id}"
             is Message.Pong -> ":${message.prefix} PONG ${message.prefix} :${message.id}"
             is Message.Quit -> ":${message.prefix} QUIT :${message.message}"

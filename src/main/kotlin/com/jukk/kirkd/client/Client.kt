@@ -30,6 +30,7 @@ class Client(
     private var realName: String = ""
     private val hostname: String = socket?.remoteAddress?.toJavaAddress()?.hostname ?: ""
     private var registered = false
+    private var channels = mutableSetOf<String>()
 
     fun isRegistered(): Boolean {
         return registered
@@ -69,6 +70,18 @@ class Client(
 
     fun getRealName(): String {
         return realName
+    }
+
+    fun addChannel(channel: String) {
+        channels.add(channel)
+    }
+
+    fun removeChannel(channel: String) {
+        channels.remove(channel)
+    }
+
+    fun getChannels(): Set<String> {
+        return channels
     }
 
     private suspend fun send(message: String) {

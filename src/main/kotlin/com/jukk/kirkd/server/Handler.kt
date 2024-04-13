@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import mu.KotlinLogging
 import com.jukk.kirkd.server.Channel as ServerChannel
 
-class ClientNotRegisteredException : Exception()
+class ClientNotRegisteredException(message: String) : Exception(message)
 
 private val logger = KotlinLogging.logger {}
 
@@ -35,7 +35,7 @@ class Handler(
     fun handle(command: Command): List<CommandOutput> {
         return when (command) {
             is Command.Message -> handleMessage(command.client, command.message)
-            is Command.Close -> handleClose(command.client)
+            is Command.Close -> handleClose(command.client, "EOF received")
             is Command.Healthcheck -> handleHealthcheck(command.client)
             else -> emptyList()
         }
@@ -46,10 +46,28 @@ class Handler(
         return listOf(CommandOutput(client, Message.Ping(serverIdentity, ts.toString())))
     }
 
-    fun handleClose(client: Client): List<CommandOutput> {
+    fun handleClose(client: Client, reason: String): List<CommandOutput> {
+        if (!state.hasClient(client)) {
+            logger.debug { "client not found in state" }
+            return emptyList()
+        }
+
+        val clients = client.getChannels().map { channelName ->
+            val channel = state.getChannel(channelName)
+            when (channel) {
+                null -> emptyList()
+                else -> {
+                    channel.getClients()
+                }
+            }
+        }.flatten().toMutableSet()
+        clients.remove(client)
+
         state.removeClient(client)
         client.close()
-        return emptyList() // TODO: send quit to all channels
+
+        val quit = Message.Quit(client.getFullmask(), reason)
+        return listOf(CommandOutput(clients.toList(), quit))
     }
 
     fun clientAccessControl(client: Client, message: Message) {
@@ -58,7 +76,7 @@ class Handler(
             when (message) {
                 is Message.Nick, is Message.User, is Message.Cap, is Message.Quit -> return
             }
-            throw ClientNotRegisteredException()
+            throw ClientNotRegisteredException(message.toString())
         }
     }
 
@@ -78,6 +96,7 @@ class Handler(
             is Message.Privmsg -> handlePrivmsg(client, message)
             is Message.Ping -> handlePing(client, message)
             is Message.Cap -> handleCap(client, message)
+            is Message.Quit -> handleClose(client, message.message)
             else -> emptyList()
         }
     }
@@ -128,6 +147,7 @@ class Handler(
             state.addChannel(channel)
         }
         channel.addClient(client)
+        client.addChannel(message.channel)
 
         val proxiedJoin = Message.Join(client.getFullmask(), message.channel)
         val channelClients = channel.getClients().toList()
@@ -146,12 +166,13 @@ class Handler(
         val channel = state.getChannel(message.channel) ?: return emptyList()
         val channelClients = channel.getClients().toList()
         channel.removeClient(client)
+        client.removeChannel(message.channel)
 
         if (channel.getClients().isEmpty()) {
             state.removeChannel(channel)
         }
 
-        val proxiedPart = Message.Part(client.getFullmask(), message.channel)
+        val proxiedPart = Message.Part(client.getFullmask(), message.channel, message.message)
         return listOf(CommandOutput(channelClients, proxiedPart))
     }
 

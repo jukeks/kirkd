@@ -66,6 +66,10 @@ class State {
         return clients.find { it.getNick() == nick }
     }
 
+    fun hasClient(client: Client): Boolean {
+        return clients.contains(client)
+    }
+
     fun addChannel(channel: Channel) {
         channels[channel.name] = channel
     }

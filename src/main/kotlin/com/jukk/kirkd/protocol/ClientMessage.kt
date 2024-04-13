@@ -11,7 +11,7 @@ object ClientMessage {
 
             "PRIVMSG" -> Message.Privmsg(atoms.prefix, atoms.params[0], atoms.params[1])
             "JOIN" -> Message.Join(atoms.prefix, atoms.params[0])
-            "PART" -> Message.Part(atoms.prefix, atoms.params[0])
+            "PART" -> Message.Part(atoms.prefix, atoms.params[0], atoms.params.getOrNull(1))
             "PING" -> Message.Ping(atoms.prefix, atoms.params[0])
             "PONG" -> Message.Pong(atoms.prefix, atoms.params[0])
             "QUIT" -> Message.Quit(atoms.prefix, atoms.params[0])
