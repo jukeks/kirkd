@@ -29,7 +29,7 @@ object ServerMessage {
                 message.prefix,
                 "353",
                 listOf(message.nick, "@", message.channel),
-                message.users.joinToString { " " })
+                message.users.joinToString(" "))
 
             is Message.EndOfUsers -> Atoms(
                 message.prefix,

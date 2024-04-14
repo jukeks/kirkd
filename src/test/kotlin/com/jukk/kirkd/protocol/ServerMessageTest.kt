@@ -48,7 +48,14 @@ class ServerMessageTest : FunSpec({
     }
 
     test("serializing TOPICREPLY") {
-        val serialized = ServerMessage.serialize(Message.TopicReply("server", "#channel", "tester","new topic"))
+        val serialized = ServerMessage.serialize(Message.TopicReply("server", "#channel", "tester", "new topic"))
         serialized shouldBe ":server 332 tester #channel :new topic\r\n"
     }
+
+    test("serializing USERS") {
+        val serialized =
+            ServerMessage.serialize(Message.Users("server", "#channel", "tester", listOf("user1", "user2")))
+        serialized shouldBe ":server 353 tester @ #channel :user1 user2\r\n"
+    }
 })
+
