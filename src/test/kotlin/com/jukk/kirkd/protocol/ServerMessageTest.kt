@@ -5,56 +5,56 @@ import io.kotest.matchers.shouldBe
 
 class ServerMessageTest : FunSpec({
     test("serializing PRIVMSG") {
-        val serialized = ServerMessage.serialize(Message.Privmsg("nick!user@host", "#channel", "hello yeah"))
+        val serialized = Message.Privmsg("nick!user@host", "#channel", "hello yeah").serialize()
         serialized shouldBe ":nick!user@host PRIVMSG #channel :hello yeah\r\n"
     }
 
     test("serializing JOIN") {
-        val serialized = ServerMessage.serialize(Message.Join("nick!user@host", "#channel"))
+        val serialized = Message.Join("nick!user@host", "#channel").serialize()
         serialized shouldBe ":nick!user@host JOIN #channel\r\n"
     }
 
     test("serializing PART") {
-        val serializedWithReason = ServerMessage.serialize(Message.Part("nick!user@host", "#channel", "reason"))
+        val serializedWithReason = Message.Part("nick!user@host", "#channel", "reason").serialize()
         serializedWithReason shouldBe ":nick!user@host PART #channel :reason\r\n"
 
-        val serialized = ServerMessage.serialize(Message.Part("nick!user@host", "#channel", null))
+        val serialized = Message.Part("nick!user@host", "#channel", null).serialize()
         serialized shouldBe ":nick!user@host PART #channel\r\n"
     }
 
     test("serializing PING") {
-        val serialized = ServerMessage.serialize(Message.Ping("nick!user@host", "1234"))
+        val serialized = Message.Ping("nick!user@host", "1234").serialize()
         serialized shouldBe ":nick!user@host PING 1234\r\n"
     }
 
     test("serializing PONG") {
-        val serialized = ServerMessage.serialize(Message.Pong("nick!user@host", "1234"))
+        val serialized = Message.Pong("nick!user@host", "1234").serialize()
         serialized shouldBe ":nick!user@host PONG 1234\r\n"
     }
 
     test("serializing QUIT") {
-        val serialized = ServerMessage.serialize(Message.Quit("nick!user@host", "bye"))
+        val serialized = Message.Quit("nick!user@host", "bye").serialize()
         serialized shouldBe ":nick!user@host QUIT :bye\r\n"
     }
 
     test("serializing NICK") {
-        val serialized = ServerMessage.serialize(Message.Nick("nick!user@host", "newnick"))
+        val serialized = Message.Nick("nick!user@host", "newnick").serialize()
         serialized shouldBe ":nick!user@host NICK newnick\r\n"
     }
 
     test("serializing TOPIC") {
-        val serialized = ServerMessage.serialize(Message.Topic("nick!user@host", "#channel", "new topic"))
+        val serialized = Message.Topic("nick!user@host", "#channel", "new topic").serialize()
         serialized shouldBe ":nick!user@host TOPIC #channel :new topic\r\n"
     }
 
     test("serializing TOPICREPLY") {
-        val serialized = ServerMessage.serialize(Message.TopicReply("server", "#channel", "tester", "new topic"))
+        val serialized = Message.TopicReply("server", "#channel", "tester", "new topic").serialize()
         serialized shouldBe ":server 332 tester #channel :new topic\r\n"
     }
 
     test("serializing USERS") {
         val serialized =
-            ServerMessage.serialize(Message.Users("server", "#channel", "tester", listOf("user1", "user2")))
+            Message.Users("server", "#channel", "tester", listOf("user1", "user2")).serialize()
         serialized shouldBe ":server 353 tester @ #channel :user1 user2\r\n"
     }
 })

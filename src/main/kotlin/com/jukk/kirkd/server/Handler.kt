@@ -3,7 +3,6 @@ package com.jukk.kirkd.server
 import java.time.Instant
 import com.jukk.kirkd.client.Client
 import com.jukk.kirkd.protocol.Message
-import com.jukk.kirkd.protocol.ServerMessage
 import kotlinx.coroutines.channels.Channel
 import mu.KotlinLogging
 import com.jukk.kirkd.server.Channel as ServerChannel
@@ -23,7 +22,7 @@ class Handler(
             val results = handle(command)
             for (result in results) {
                 for (message in result.messages) {
-                    val serialized = ServerMessage.serialize(message)
+                    val serialized = message.serialize()
                     for (client in result.clients) {
                         client.sendMessage(serialized)
                     }

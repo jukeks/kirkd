@@ -3,6 +3,8 @@ package com.jukk.kirkd.protocol
 abstract class Message private constructor() {
     abstract fun fromAtoms(input: Atoms): Message
     abstract fun toAtoms(): Atoms
+    fun serialize(): String = toAtoms().serialize()
+
     protected fun formatNick(nick: String?): String {
         if (nick == null) {
             return "*"
