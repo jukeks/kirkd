@@ -9,6 +9,7 @@ object ServerMessage {
     }
 
     fun serialize(message: Message): String {
+        return message.toAtoms().serialize()
         val atoms = when (message) {
             is Message.Privmsg -> Atoms(message.prefix, "PRIVMSG", listOf(message.target), message.content)
             is Message.Join -> Atoms(message.prefix, "JOIN", listOf(message.channel))

@@ -24,6 +24,8 @@ data class Atoms(
             if (trailing.isNotEmpty()) {
                 append(" :$trailing")
             }
-        }.append("\r\n").toString()
+
+            append("\r\n")
+        }.toString()
     }
 }
