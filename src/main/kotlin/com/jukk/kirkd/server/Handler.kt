@@ -43,7 +43,7 @@ class Handler(
 
     fun handleHealthcheck(client: Client): List<CommandOutput> {
         val ts = Instant.now().toEpochMilli()
-        return listOf(CommandOutput(client, Message.Ping(serverIdentity, ts.toString())))
+        return listOf(CommandOutput(client, Message.Ping("", ts.toString())))
     }
 
     fun handleClose(client: Client, reason: String): List<CommandOutput> {
@@ -70,22 +70,24 @@ class Handler(
         return listOf(CommandOutput(clients.toList(), quit))
     }
 
-    fun clientAccessControl(client: Client, message: Message) {
+    fun clientAccessControl(client: Client, message: Message): List<CommandOutput>? {
         if (!client.isRegistered()) {
             // only NICK and USER and CAP and QUIT messages are allowed
             when (message) {
-                is Message.Nick, is Message.User, is Message.Cap, is Message.Quit -> return
+                is Message.Nick, is Message.User, is Message.Cap, is Message.Quit -> return null
             }
-            throw ClientNotRegisteredException(message.toString())
+            return listOf(
+                CommandOutput(client, Message.RegisterFirst(serverIdentity, client.getNick()))
+            )
         }
+
+        return null
     }
 
     fun handleMessage(client: Client, message: Message): List<CommandOutput> {
-        try {
-            clientAccessControl(client, message)
-        } catch (e: Exception) {
-            logger.error(e) { "client access control failure" }
-            return emptyList()
+        val commands = clientAccessControl(client, message)
+        if (commands != null) {
+            return commands
         }
 
         return when (message) {
@@ -190,7 +192,7 @@ class Handler(
     }
 
     fun handlePing(client: Client, message: Message.Ping): List<CommandOutput> {
-        val pong = Message.Pong(serverIdentity, message.id)
+        val pong = Message.Pong("", message.id)
         return listOf(CommandOutput(client, pong))
     }
 

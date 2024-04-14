@@ -18,4 +18,5 @@ open class Message private constructor() {
     class Cap(val prefix: String, val subcommand: String, val params: List<String>) : Message()
     class Welcome(val prefix: String, val nick: String) : Message()
     class NickInUse(val prefix: String, val nick: String?, val newNick: String) : Message()
+    class RegisterFirst(val prefix: String, val nick: String?) : Message()
 }
