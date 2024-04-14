@@ -1,52 +1,71 @@
 package com.jukk.kirkd.protocol
 
 object ServerMessage {
-    private fun formatPrefix(prefix: String): String = if (prefix == "") "" else ":$prefix "
+    private fun formatNick(nick: String?): String {
+        if (nick == null) {
+            return "*"
+        }
+        return nick.ifEmpty { "*" }
+    }
 
     fun serialize(message: Message): String {
-        val line = when (message) {
-            is Message.Privmsg -> "${formatPrefix(message.prefix)}PRIVMSG ${message.target} :${message.content}"
-            is Message.Join -> "${formatPrefix(message.prefix)}JOIN ${message.channel}"
-            is Message.Part -> {
-                val content = if (message.message != null) " :${message.message}" else ""
-                "${formatPrefix(message.prefix)}PART ${message.channel}$content"
-            }
+        val atoms = when (message) {
+            is Message.Privmsg -> Atoms(message.prefix, "PRIVMSG", listOf(message.target), message.content)
+            is Message.Join -> Atoms(message.prefix, "JOIN", listOf(message.channel))
+            is Message.Part -> Atoms(
+                message.prefix, "PART", listOf(message.channel), message.message ?: ""
+            )
 
-            is Message.Ping -> "${formatPrefix(message.prefix)}PING :${message.id}"
-            is Message.Pong -> "${formatPrefix(message.prefix)}PONG :${message.id}"
-            is Message.Quit -> "${formatPrefix(message.prefix)}QUIT :${message.message}"
-            is Message.Nick -> "${formatPrefix(message.prefix)}NICK ${message.nick}"
-            is Message.Topic -> "${formatPrefix(message.prefix)}TOPIC ${message.channel} :${message.topic}"
-            is Message.TopicReply ->
-                "${formatPrefix(message.prefix)}332 ${message.nick} ${message.channel} :${message.topic}"
-            is Message.Users -> "${formatPrefix(message.prefix)}353 ${message.nick} @ ${message.channel} :${
-                message.users.joinToString(
-                    " "
-                )
-            }"
+            is Message.Ping -> Atoms(message.prefix, "PING", listOf(message.id))
+            is Message.Pong -> Atoms(message.prefix, "PONG", listOf(message.id))
+            is Message.Quit -> Atoms(message.prefix, "QUIT", trailing = message.message)
+            is Message.Nick -> Atoms(message.prefix, "NICK", listOf(message.nick))
+            is Message.Topic -> Atoms(message.prefix, "TOPIC", listOf(message.channel), message.topic)
+            is Message.TopicReply -> Atoms(
+                message.prefix, "332", listOf(message.nick, message.channel), message.topic
+            )
 
-            is Message.EndOfUsers ->
-                "${formatPrefix(message.prefix)}366 ${message.nick} ${message.channel} :End of /NAMES list"
-            is Message.EndOfMotd -> "${formatPrefix(message.prefix)}376 ${message.nick} :End of /MOTD command"
-            is Message.Cap ->
-                "${formatPrefix(message.prefix)}CAP * ${message.subcommand} :${message.params.joinToString(" ")}"
+            is Message.Users -> Atoms(
+                message.prefix,
+                "353",
+                listOf(message.nick, "@", message.channel),
+                message.users.joinToString { " " })
 
-            is Message.Welcome ->
-                "${formatPrefix(message.prefix)}001 ${message.nick} :Welcome to the Internet Relay Network ${message.nick}"
+            is Message.EndOfUsers -> Atoms(
+                message.prefix,
+                "366",
+                listOf(message.nick, message.channel), "End of /NAMES list."
+            )
+
+            is Message.EndOfMotd -> Atoms(
+                message.prefix, "376", listOf(message.nick, "End of /MOTD command.")
+            )
+
+            is Message.Cap -> Atoms(
+                message.prefix, "CAP", listOf("*", message.subcommand) + message.params
+            )
+
+            is Message.Welcome -> Atoms(
+                message.prefix,
+                "001",
+                listOf(message.nick), "Welcome to the Internet Relay Network ${message.nick}"
+            )
 
             is Message.NickInUse -> {
-                val nick = if (message.nick == "") "*" else message.nick
-                "${formatPrefix(message.prefix)}433 ${nick} ${message.newNick} :Nickname already in use"
+                Atoms(
+                    message.prefix,
+                    "433",
+                    listOf(formatNick(message.nick), message.newNick), "Nickname already in use."
+                )
             }
 
             is Message.RegisterFirst -> {
-                val nick = if (message.nick == "") "*" else message.nick
-                "${formatPrefix(message.prefix)}451 $nick :Register first"
+                Atoms(message.prefix, "451", listOf(formatNick(message.nick)), "Register first.")
             }
 
             else -> throw IllegalArgumentException("Unknown message type")
         }
 
-        return "$line\r\n"
+        return atoms.serialize()
     }
 }

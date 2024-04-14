@@ -24,12 +24,12 @@ class ServerMessageTest : FunSpec({
 
     test("serializing PING") {
         val serialized = ServerMessage.serialize(Message.Ping("nick!user@host", "1234"))
-        serialized shouldBe ":nick!user@host PING nick!user@host :1234\r\n"
+        serialized shouldBe ":nick!user@host PING 1234\r\n"
     }
 
     test("serializing PONG") {
         val serialized = ServerMessage.serialize(Message.Pong("nick!user@host", "1234"))
-        serialized shouldBe ":nick!user@host PONG nick!user@host :1234\r\n"
+        serialized shouldBe ":nick!user@host PONG 1234\r\n"
     }
 
     test("serializing QUIT") {

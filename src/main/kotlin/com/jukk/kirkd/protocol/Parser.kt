@@ -1,25 +1,12 @@
 package com.jukk.kirkd.protocol
 
-data class Atoms(
-    val prefix: String,
-    val command: String,
-    val params: List<String>
-) {
-    override fun toString(): String {
-        if (prefix.isNotEmpty()) {
-            return "Atoms(prefix='$prefix', command='$command', params=$params)"
-        }
-        return "Atoms(command='$command', params=$params)"
-    }
-}
-
 object Parser {
-    fun strippingPartition(input: String): Pair<String, String> {
+    private fun strippingPartition(input: String): Pair<String, String> {
         val components = input.split(" ", limit = 2)
         return Pair(components[0], components.getOrNull(1)?.trimStart() ?: "")
     }
 
-    fun parseParams(paramsRaw: String): List<String> {
+    private fun parseParams(paramsRaw: String): List<String> {
         val params = mutableListOf<String>()
         var rest = paramsRaw
         while (rest.isNotEmpty()) {

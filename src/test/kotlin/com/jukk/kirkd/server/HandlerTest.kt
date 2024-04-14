@@ -240,7 +240,11 @@ class HandlerTest : FunSpec({
         val message = Message.Join("", "#test")
         val output = handler.handle(Command.Message(client, message))
 
-        output.size shouldBe 0
+        output.size shouldBe 1
         state.getChannel("#test") shouldBe null
+
+        output[0].clients.size shouldBe 1
+        output[0].clients shouldContain client
+        output[0].messages[0] as Message.RegisterFirst
     }
 })
