@@ -108,10 +108,10 @@ abstract class Message private constructor() {
 
     data class EndOfUsers(val prefix: String, val channel: String, val nick: String) : Message() {
         companion object {
-            fun fromAtoms(input: Atoms): Message = EndOfUsers(input.prefix, input.params[0], input.params[1])
+            fun fromAtoms(input: Atoms): Message = EndOfUsers(input.prefix, input.params[1], input.params[0])
         }
 
-        override fun toAtoms(): Atoms = Atoms(prefix, "366", listOf(channel, nick))
+        override fun toAtoms(): Atoms = Atoms(prefix, "366", listOf(nick,  channel), "End of /NAMES list.")
     }
 
     data class EndOfMotd(val prefix: String, val nick: String) : Message() {
@@ -120,14 +120,6 @@ abstract class Message private constructor() {
         }
 
         override fun toAtoms(): Atoms = Atoms(prefix, "376", listOf(nick))
-    }
-
-    data class Unknown(val prefix: String, val command: String, val params: List<String>) : Message() {
-        companion object {
-            fun fromAtoms(input: Atoms): Message = Unknown(input.prefix, input.command, input.params)
-        }
-
-        override fun toAtoms(): Atoms = Atoms(prefix, command, params)
     }
 
     data class Cap(val prefix: String, val nick: String?, val subcommand: String, val params: List<String>) :
@@ -161,5 +153,13 @@ abstract class Message private constructor() {
         }
 
         override fun toAtoms(): Atoms = Atoms(prefix, "451", listOf(formatNick(nick)))
+    }
+
+    data class Unknown(val prefix: String, val command: String, val params: List<String>) : Message() {
+        companion object {
+            fun fromAtoms(input: Atoms): Message = Unknown(input.prefix, input.command, input.params)
+        }
+
+        override fun toAtoms(): Atoms = Atoms(prefix, command, params)
     }
 }

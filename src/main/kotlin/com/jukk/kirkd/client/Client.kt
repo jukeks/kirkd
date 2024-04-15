@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import mu.KotlinLogging
+import java.net.SocketException
 
 
 private val logger = KotlinLogging.logger {}
@@ -103,6 +104,7 @@ class Client(
     }
 
     private suspend fun receiveMessage(): Message? {
+
         val line = receive()
         return line?.let {
             logger.info("Received: $it")
@@ -136,9 +138,13 @@ class Client(
 
         val healthcheckJob = scope.launch { healthcheckTicker() }
 
-        while (true) {
-            val message = receiveMessage() ?: break
-            commandChannel.send(Command.Message(this, message))
+        try {
+            while (true) {
+                val message = receiveMessage() ?: break
+                commandChannel.send(Command.Message(this, message))
+            }
+        } catch (e: SocketException) {
+            logger.info("Client error $nick!$user@$hostname: ${e.message}")
         }
 
         writerJob.cancel()
