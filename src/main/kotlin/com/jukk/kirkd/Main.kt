@@ -1,12 +1,14 @@
 package com.jukk.kirkd
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import com.jukk.kirkd.server.Server
 
 
 fun main() {
     runBlocking {
-        val server = Server("127.0.0.1", 9002)
-        server.start(this)
+        withContext(Dispatchers.Default) {
+            val server = Server("127.0.0.1", 9002)
+            server.start(this)
+        }
     }
 }
