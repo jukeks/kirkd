@@ -4,7 +4,7 @@ data class Atoms(
     val prefix: String,
     val command: String,
     val params: List<String> = emptyList(),
-    val trailing: String = "",
+    val trailing: String? = null,
 ) {
     override fun toString(): String {
         if (prefix.isNotEmpty()) {
@@ -21,7 +21,7 @@ data class Atoms(
                 append(" $param")
             }
 
-            if (trailing.isNotEmpty()) {
+            if (trailing != null) {
                 append(" :$trailing")
             }
 

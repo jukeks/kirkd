@@ -130,12 +130,13 @@ abstract class Message private constructor() {
         override fun toAtoms(): Atoms = Atoms(prefix, command, params)
     }
 
-    data class Cap(val prefix: String, val subcommand: String, val params: List<String>) : Message() {
+    data class Cap(val prefix: String, val nick: String?, val subcommand: String, val params: List<String>) :
+        Message() {
         companion object {
-            fun fromAtoms(input: Atoms): Message = Cap(input.prefix, input.params[0], input.params.drop(1))
+            fun fromAtoms(input: Atoms): Message = Cap(input.prefix, null, input.params[0], input.params.getOrNull(1)?.split(" ") ?: emptyList())
         }
 
-        override fun toAtoms(): Atoms = Atoms(prefix, "CAP", listOf(subcommand) + params)
+        override fun toAtoms(): Atoms = Atoms(prefix, "CAP", listOf(nick ?: "*", subcommand), params.joinToString(" "))
     }
 
     data class Welcome(val prefix: String, val nick: String) : Message() {

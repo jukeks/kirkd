@@ -197,10 +197,10 @@ class Handler(
 
     fun handleCap(client: Client, message: Message.Cap): List<CommandOutput> {
         return if (message.subcommand == "LS") {
-            val cap = Message.Cap(serverIdentity, "LS", emptyList())
+            val cap = Message.Cap(serverIdentity, null, "LS", emptyList())
             listOf(CommandOutput(client, cap))
         } else if (message.subcommand == "REQ") {
-            val nak = Message.Cap(serverIdentity, "NAK", emptyList())
+            val nak = Message.Cap(serverIdentity, null, "NAK", emptyList())
             listOf(CommandOutput(client, nak))
         } else {
             emptyList()
