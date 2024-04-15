@@ -75,14 +75,14 @@ class MessageTest : FunSpec({
     }
 
     test("serializing USERS") {
-        val message = Message.Users("server", "#channel", "tester", listOf("user1", "user2"))
+        val message = Message.Names("server", "#channel", "tester", listOf("user1", "user2"))
         val serialized = message.serialize()
         serialized shouldBe ":server 353 tester @ #channel :user1 user2\r\n"
         Parser.parse(serialized) shouldBe message
     }
 
     test("serializing end of NAMES") {
-        val message = Message.EndOfUsers("server", "#channel", "tester")
+        val message = Message.EndOfNames("server", "#channel", "tester")
         val serialized = message.serialize()
         serialized shouldBe ":server 366 tester #channel :End of /NAMES list.\r\n"
         Parser.parse(serialized) shouldBe message

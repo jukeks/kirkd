@@ -153,14 +153,14 @@ class Handler(
         val proxiedJoin = Message.Join(client.getFullmask(), message.channel)
         val channelClients = channel.getClients().toList()
 
-        val usersMsg =
-            Message.Users(serverIdentity, message.channel, client.getNick(), channelClients.map { it.getNick() })
-        val endOfUsers = Message.EndOfUsers(serverIdentity, message.channel, client.getNick())
+        val namesMsg =
+            Message.Names(serverIdentity, message.channel, client.getNick(), channelClients.map { it.getNick() })
+        val endOfNames = Message.EndOfNames(serverIdentity, message.channel, client.getNick())
             val topicReply = Message.TopicReply(serverIdentity, message.channel, client.getNick(), channel.topic)
 
         return listOf(
             CommandOutput(channelClients, proxiedJoin),
-            CommandOutput(client, listOf(usersMsg, endOfUsers, topicReply))
+            CommandOutput(client, listOf(namesMsg, endOfNames, topicReply))
         )
     }
 

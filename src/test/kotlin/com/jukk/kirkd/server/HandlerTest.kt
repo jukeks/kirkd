@@ -5,13 +5,7 @@ import io.kotest.matchers.shouldBe
 import com.jukk.kirkd.client.Client
 import com.jukk.kirkd.protocol.Message
 import io.kotest.matchers.collections.shouldContain
-import io.ktor.network.sockets.*
-import io.ktor.util.network.*
-import io.ktor.utils.io.*
 import kotlinx.coroutines.channels.Channel
-import io.mockk.mockk
-import kotlinx.coroutines.Job
-import kotlin.coroutines.CoroutineContext
 
 class HandlerTest : FunSpec({
     fun newClient(): Client {
@@ -179,15 +173,15 @@ class HandlerTest : FunSpec({
         channel.getClients() shouldContain client
         channel.getClients() shouldContain otherClient
 
-        val usersMessage = otherOutput[1].messages[0] as Message.Users
-        usersMessage.prefix shouldBe "testserver"
-        usersMessage.channel shouldBe testChannel
-        usersMessage.users shouldContain client.getNick()
-        usersMessage.users shouldContain otherClient.getNick()
+        val namesMessage = otherOutput[1].messages[0] as Message.Names
+        namesMessage.prefix shouldBe "testserver"
+        namesMessage.channel shouldBe testChannel
+        namesMessage.users shouldContain client.getNick()
+        namesMessage.users shouldContain otherClient.getNick()
 
-        val endOfUsersMessage = otherOutput[1].messages[1] as Message.EndOfUsers
-        endOfUsersMessage.prefix shouldBe "testserver"
-        endOfUsersMessage.channel shouldBe testChannel
+        val endOfNamesMessage = otherOutput[1].messages[1] as Message.EndOfNames
+        endOfNamesMessage.prefix shouldBe "testserver"
+        endOfNamesMessage.channel shouldBe testChannel
     }
 
     test("part") {

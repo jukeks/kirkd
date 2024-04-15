@@ -97,18 +97,18 @@ abstract class Message private constructor() {
         override fun toAtoms(): Atoms = Atoms(prefix, "332", listOf(nick, channel), topic)
     }
 
-    data class Users(val prefix: String, val channel: String, val nick: String, val users: List<String>) : Message() {
+    data class Names(val prefix: String, val channel: String, val nick: String, val users: List<String>) : Message() {
         companion object {
             fun fromAtoms(input: Atoms): Message =
-                Users(input.prefix, input.params[2], input.params[0], input.params[3].split(" "))
+                Names(input.prefix, input.params[2], input.params[0], input.params[3].split(" "))
         }
 
         override fun toAtoms(): Atoms = Atoms(prefix, "353", listOf(nick, "@", channel), users.joinToString(" "))
     }
 
-    data class EndOfUsers(val prefix: String, val channel: String, val nick: String) : Message() {
+    data class EndOfNames(val prefix: String, val channel: String, val nick: String) : Message() {
         companion object {
-            fun fromAtoms(input: Atoms): Message = EndOfUsers(input.prefix, input.params[1], input.params[0])
+            fun fromAtoms(input: Atoms): Message = EndOfNames(input.prefix, input.params[1], input.params[0])
         }
 
         override fun toAtoms(): Atoms = Atoms(prefix, "366", listOf(nick,  channel), "End of /NAMES list.")
