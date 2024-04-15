@@ -27,7 +27,7 @@ object Parser {
         if (input.startsWith(":")) {
             val (prefix, rest) = strippingPartition(input)
             val (command, params) = strippingPartition(rest)
-            return Atoms(prefix, command, parseParams(params))
+            return Atoms(prefix.drop(1), command, parseParams(params))
         }
 
         val prefix = ""
@@ -36,7 +36,7 @@ object Parser {
     }
 
     fun parse(input: String): Message {
-        val atoms = atomsFromString(input)
+        val atoms = atomsFromString(input.trimEnd())
         return when (atoms.command) {
             "USER" -> Message.User.fromAtoms(atoms)
             "PRIVMSG" -> Message.Privmsg.fromAtoms(atoms)
@@ -48,6 +48,8 @@ object Parser {
             "NICK" -> Message.Nick.fromAtoms(atoms)
             "TOPIC" -> Message.Topic.fromAtoms(atoms)
             "CAP" -> Message.Cap.fromAtoms(atoms)
+            "332" -> Message.TopicReply.fromAtoms(atoms)
+            "353" -> Message.Users.fromAtoms(atoms)
             else -> Message.Unknown(atoms.prefix, atoms.command, atoms.params)
         }
     }
