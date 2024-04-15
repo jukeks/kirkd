@@ -50,6 +50,7 @@ object Parser {
             "CAP" -> Message.Cap.fromAtoms(atoms)
             "332" -> Message.TopicReply.fromAtoms(atoms)
             "353" -> Message.Users.fromAtoms(atoms)
+            "366" -> Message.EndOfUsers.fromAtoms(atoms)
             else -> Message.Unknown(atoms.prefix, atoms.command, atoms.params)
         }
     }
