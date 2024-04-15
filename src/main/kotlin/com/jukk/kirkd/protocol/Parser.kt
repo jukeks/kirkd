@@ -34,4 +34,21 @@ object Parser {
         val (command, params) = strippingPartition(input)
         return Atoms(prefix, command, parseParams(params))
     }
+
+    fun parse(input: String): Message {
+        val atoms = atomsFromString(input)
+        return when (atoms.command) {
+            "USER" -> Message.User.fromAtoms(atoms)
+            "PRIVMSG" -> Message.Privmsg.fromAtoms(atoms)
+            "JOIN" -> Message.Join.fromAtoms(atoms)
+            "PART" -> Message.Part.fromAtoms(atoms)
+            "PING" -> Message.Ping.fromAtoms(atoms)
+            "PONG" -> Message.Pong.fromAtoms(atoms)
+            "QUIT" -> Message.Quit.fromAtoms(atoms)
+            "NICK" -> Message.Nick.fromAtoms(atoms)
+            "TOPIC" -> Message.Topic.fromAtoms(atoms)
+            "CAP" -> Message.Cap.fromAtoms(atoms)
+            else -> Message.Unknown(atoms.prefix, atoms.command, atoms.params)
+        }
+    }
 }

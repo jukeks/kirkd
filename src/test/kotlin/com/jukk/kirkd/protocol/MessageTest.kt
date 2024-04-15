@@ -3,7 +3,7 @@ package com.jukk.kirkd.protocol
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-class ServerMessageTest : FunSpec({
+class MessageTest : FunSpec({
     test("serializing PRIVMSG") {
         val serialized = Message.Privmsg("nick!user@host", "#channel", "hello yeah").serialize()
         serialized shouldBe ":nick!user@host PRIVMSG #channel :hello yeah\r\n"
