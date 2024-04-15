@@ -68,21 +68,21 @@ class MessageTest : FunSpec({
     }
 
     test("serializing TOPICREPLY") {
-        val message = Message.TopicReply("server", "#channel", "tester", "new topic")
+        val message = Message.TopicReply("server", "tester", "#channel", "new topic")
         val serialized = message.serialize()
         serialized shouldBe ":server 332 tester #channel :new topic\r\n"
         Parser.parse(serialized) shouldBe message
     }
 
-    test("serializing USERS") {
-        val message = Message.Names("server", "#channel", "tester", listOf("user1", "user2"))
+    test("serializing NAMES") {
+        val message = Message.Names("server",  "tester","#channel", listOf("user1", "user2"))
         val serialized = message.serialize()
         serialized shouldBe ":server 353 tester @ #channel :user1 user2\r\n"
         Parser.parse(serialized) shouldBe message
     }
 
     test("serializing end of NAMES") {
-        val message = Message.EndOfNames("server", "#channel", "tester")
+        val message = Message.EndOfNames("server", "tester", "#channel")
         val serialized = message.serialize()
         serialized shouldBe ":server 366 tester #channel :End of /NAMES list.\r\n"
         Parser.parse(serialized) shouldBe message
