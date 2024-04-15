@@ -48,7 +48,7 @@ class HandlerTest : FunSpec({
         val client = newClient()
         val state = State()
         val handler = Handler("test", state)
-        val capLs = Message.Cap("", "LS", emptyList())
+        val capLs = Message.Cap("", null,"LS", emptyList())
         val output = handler.handle(Command.Message(client, capLs))
 
         output[0].clients[0] shouldBe client
@@ -62,7 +62,7 @@ class HandlerTest : FunSpec({
         val client = newClient()
         val state = State()
         val handler = Handler("test", state)
-        val capReq = Message.Cap("", "REQ", listOf("cap1", "cap2"))
+        val capReq = Message.Cap("", null, "REQ", listOf("cap1", "cap2"))
         val output = handler.handle(Command.Message(client, capReq))
 
         output.size shouldBe 1

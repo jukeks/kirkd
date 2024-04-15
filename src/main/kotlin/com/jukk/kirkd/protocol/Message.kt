@@ -45,7 +45,7 @@ abstract class Message private constructor() {
             fun fromAtoms(input: Atoms): Message = Part(input.prefix, input.params[0], input.params.getOrNull(1))
         }
 
-        override fun toAtoms(): Atoms = Atoms(prefix, "PART", listOf(channel), message ?: "")
+        override fun toAtoms(): Atoms = Atoms(prefix, "PART", listOf(channel), message)
     }
 
     data class Ping(val prefix: String, val id: String) : Message() {
