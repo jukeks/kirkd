@@ -1,6 +1,5 @@
 package com.jukk.kirkd.server
 
-
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
@@ -11,12 +10,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private val logger = KotlinLogging.logger {}
 
-class Server(val hostname: String, val port: Int, private val alive: AtomicBoolean = AtomicBoolean(true)) {
+class Server(val hostname: String, val port: Int) {
+    private val alive: AtomicBoolean = AtomicBoolean(true)
     val selectorManager = SelectorManager(Dispatchers.IO)
     val serverSocket = aSocket(selectorManager).tcp().bind(hostname, port)
 
     suspend fun start(scope: CoroutineScope) {
-
         val state = State()
         val handler = Handler(hostname, state)
 

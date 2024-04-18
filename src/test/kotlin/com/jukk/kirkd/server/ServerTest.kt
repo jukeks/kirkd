@@ -1,18 +1,14 @@
 package com.jukk.kirkd.server
 
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
-import com.jukk.kirkd.client.Client
-import io.ktor.utils.io.*
 import com.jukk.kirkd.protocol.Message
 import com.jukk.kirkd.protocol.Parser
-import io.kotest.matchers.collections.shouldContain
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ServerTest : FunSpec({
     test("handle client") {
