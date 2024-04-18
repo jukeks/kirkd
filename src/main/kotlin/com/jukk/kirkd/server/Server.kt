@@ -31,7 +31,7 @@ class Server(val hostname: String, val port: Int, private val alive: AtomicBoole
 
             val client = Client(socket, handler.commandChannel)
             scope.launch {
-                client.handle(scope)
+                client.handle()
             }
         }
     }

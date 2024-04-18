@@ -6,12 +6,14 @@ import com.jukk.kirkd.protocol.Message
 import com.jukk.kirkd.protocol.Parser
 import com.jukk.kirkd.server.Command
 import io.ktor.util.network.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
+import io.ktor.utils.io.errors.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import mu.KotlinLogging
+import java.io.IOException
 import java.net.SocketException
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 private val logger = KotlinLogging.logger {}
@@ -21,6 +23,7 @@ class Client(
     private val commandChannel: Channel<Command>,
     outBufferLen: Int = 400
 ) {
+    private val alive: AtomicBoolean = AtomicBoolean(true)
     private val readChannel: ByteReadChannel? = socket?.openReadChannel()
     private val writeChannel: ByteWriteChannel? = socket?.openWriteChannel()
 
@@ -92,7 +95,20 @@ class Client(
     }
 
     private suspend fun receive(): String? {
-        return readChannel?.readUTF8Line()
+        while (alive.get()) {
+            try {
+                val line = withTimeout(5000) {
+                    readChannel?.readUTF8Line()
+                }
+                if (line != null) {
+                    return line
+                }
+            }  catch (e: TimeoutCancellationException) {
+                continue
+            }
+        }
+
+        return null
     }
 
     suspend fun sendMessage(message: String) {
@@ -104,7 +120,6 @@ class Client(
     }
 
     private suspend fun receiveMessage(): Message? {
-
         val line = receive()
         return line?.let {
             logger.info("Received: $it")
@@ -114,43 +129,56 @@ class Client(
     }
 
     fun close() {
+        logger.info { "Closing client connection $nick!$user@$hostname"}
         outQueue.close()
         socket?.close()
+        alive.set(false)
     }
 
     private suspend fun processOutQueue() {
         for (message in outQueue) {
+            if (!alive.get()) {
+                break
+            }
             send(message)
         }
     }
 
-    suspend fun healthcheckTicker() {
-        while (true) {
+    private suspend fun receiver() {
+        while (alive.get()) {
+            val message = receiveMessage()
+            if (message == null) {
+                logger.info { "Received null" }
+                break
+            }
+            commandChannel.send(Command.Message(this, message))
+        }
+        throw IOException("EOF received")
+    }
+
+    private suspend fun healthcheckTicker() {
+        while (alive.get()) {
             commandChannel.send(Command.Healthcheck(this))
-            kotlinx.coroutines.delay(30000)
+            val deadline = System.currentTimeMillis() + 30000
+            while (System.currentTimeMillis() < deadline && alive.get()) {
+                delay(500)
+            }
         }
     }
 
-    suspend fun handle(scope: CoroutineScope) {
-        val writerJob = scope.launch {
-            processOutQueue()
-        }
-
-        val healthcheckJob = scope.launch { healthcheckTicker() }
-
+    suspend fun handle() {
         try {
-            while (true) {
-                val message = receiveMessage() ?: break
-                commandChannel.send(Command.Message(this, message))
+            coroutineScope {
+                launch { processOutQueue() }
+                launch { healthcheckTicker() }
+                launch { receiver() }
             }
-        } catch (e: SocketException) {
-            logger.info("Client error $nick!$user@$hostname: ${e.message}")
+        } catch (e: IOException) {
+            logger.info { "IOException" }
         }
 
-        writerJob.cancel()
-        healthcheckJob.cancel()
+        alive.set(false)
         commandChannel.send(Command.Close(this))
-
         logger.info("Client disconnected $nick!$user@$hostname")
     }
 }
