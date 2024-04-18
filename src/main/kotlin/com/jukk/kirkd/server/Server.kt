@@ -12,9 +12,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 private val logger = KotlinLogging.logger {}
 
 class Server(val hostname: String, val port: Int, private val alive: AtomicBoolean = AtomicBoolean(true)) {
+    val selectorManager = SelectorManager(Dispatchers.IO)
+    val serverSocket = aSocket(selectorManager).tcp().bind(hostname, port)
+
     suspend fun start(scope: CoroutineScope) {
-        val selectorManager = SelectorManager(Dispatchers.IO)
-        val serverSocket = aSocket(selectorManager).tcp().bind(hostname, port)
 
         val state = State()
         val handler = Handler(hostname, state)

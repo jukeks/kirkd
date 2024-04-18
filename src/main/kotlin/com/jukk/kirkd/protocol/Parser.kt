@@ -51,6 +51,8 @@ object Parser {
             "332" -> Message.TopicReply.fromAtoms(atoms)
             "353" -> Message.Names.fromAtoms(atoms)
             "366" -> Message.EndOfNames.fromAtoms(atoms)
+            "001" -> Message.Welcome.fromAtoms(atoms)
+            "376" -> Message.EndOfMotd.fromAtoms(atoms)
             else -> Message.Unknown(atoms.prefix, atoms.command, atoms.params)
         }
     }
